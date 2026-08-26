@@ -1,0 +1,4 @@
+# 22-公司-Company · Python 依赖
+# Phase 0 §5 #3 pdfplumber 财报解析 demo 所需
+pdfplumber>=0.11
+fpdf2>=2.8
