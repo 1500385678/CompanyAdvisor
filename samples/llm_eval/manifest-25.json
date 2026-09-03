@@ -1,0 +1,43 @@
+{
+  "version": "v0.1",
+  "generated_at": "2026-09-04T03:30:00+08:00",
+  "source": "scripts/llm_eval_runner.py build_manifest()",
+  "description": "T1 财报速读 25 样本 manifest(5 公司 × 5 年报),对应 Inspiration/LLM基线/05-T1财报速读基线报告设计稿.md §3 25 样本表",
+  "select_principle": "5 公司 = 5 行业 覆盖:消费/互联网/新能源/金融/半导体;5 年 = 2020-2024 完整年报;三市覆盖 A 股 3 + H 股 1 + 美股 1",
+  "samples_count": 25,
+  "companies": [
+    {"name": "贵州茅台", "ticker": "600519.SH", "industry": "消费-白酒", "market": "SH"},
+    {"name": "腾讯控股", "ticker": "00700.HK", "industry": "互联网", "market": "HK"},
+    {"name": "宁德时代", "ticker": "300750.SZ", "industry": "新能源-动力电池", "market": "SZ"},
+    {"name": "招商银行", "ticker": "600036.SH", "industry": "金融-银行", "market": "SH"},
+    {"name": "英伟达",   "ticker": "NVDA.US",   "industry": "半导体-算力", "market": "US"}
+  ],
+  "years": [2020, 2021, 2022, 2023, 2024],
+  "samples": [
+    {"sample_id":  1, "company": "贵州茅台", "ticker": "600519.SH", "period": "FY2020", "pdf_path": "samples/llm_eval/raw/600519.SH-2020.pdf", "extract_status": "TODO"},
+    {"sample_id":  2, "company": "贵州茅台", "ticker": "600519.SH", "period": "FY2021", "pdf_path": "samples/llm_eval/raw/600519.SH-2021.pdf", "extract_status": "TODO"},
+    {"sample_id":  3, "company": "贵州茅台", "ticker": "600519.SH", "period": "FY2022", "pdf_path": "samples/llm_eval/raw/600519.SH-2022.pdf", "extract_status": "TODO"},
+    {"sample_id":  4, "company": "贵州茅台", "ticker": "600519.SH", "period": "FY2023", "pdf_path": "samples/llm_eval/raw/600519.SH-2023.pdf", "extract_status": "TODO"},
+    {"sample_id":  5, "company": "贵州茅台", "ticker": "600519.SH", "period": "FY2024", "pdf_path": "samples/llm_eval/raw/600519.SH-2024.pdf", "extract_status": "TODO"},
+    {"sample_id":  6, "company": "腾讯控股", "ticker": "00700.HK", "period": "FY2020", "pdf_path": "samples/llm_eval/raw/00700.HK-2020.pdf", "extract_status": "TODO"},
+    {"sample_id":  7, "company": "腾讯控股", "ticker": "00700.HK", "period": "FY2021", "pdf_path": "samples/llm_eval/raw/00700.HK-2021.pdf", "extract_status": "TODO"},
+    {"sample_id":  8, "company": "腾讯控股", "ticker": "00700.HK", "period": "FY2022", "pdf_path": "samples/llm_eval/raw/00700.HK-2022.pdf", "extract_status": "TODO"},
+    {"sample_id":  9, "company": "腾讯控股", "ticker": "00700.HK", "period": "FY2023", "pdf_path": "samples/llm_eval/raw/00700.HK-2023.pdf", "extract_status": "TODO"},
+    {"sample_id": 10, "company": "腾讯控股", "ticker": "00700.HK", "period": "FY2024", "pdf_path": "samples/llm_eval/raw/00700.HK-2024.pdf", "extract_status": "TODO"},
+    {"sample_id": 11, "company": "宁德时代", "ticker": "300750.SZ", "period": "FY2020", "pdf_path": "samples/llm_eval/raw/300750.SZ-2020.pdf", "extract_status": "TODO"},
+    {"sample_id": 12, "company": "宁德时代", "ticker": "300750.SZ", "period": "FY2021", "pdf_path": "samples/llm_eval/raw/300750.SZ-2021.pdf", "extract_status": "TODO"},
+    {"sample_id": 13, "company": "宁德时代", "ticker": "300750.SZ", "period": "FY2022", "pdf_path": "samples/llm_eval/raw/300750.SZ-2022.pdf", "extract_status": "TODO"},
+    {"sample_id": 14, "company": "宁德时代", "ticker": "300750.SZ", "period": "FY2023", "pdf_path": "samples/llm_eval/raw/300750.SZ-2023.pdf", "extract_status": "TODO"},
+    {"sample_id": 15, "company": "宁德时代", "ticker": "300750.SZ", "period": "FY2024", "pdf_path": "samples/llm_eval/raw/300750.SZ-2024.pdf", "extract_status": "TODO"},
+    {"sample_id": 16, "company": "招商银行", "ticker": "600036.SH", "period": "FY2020", "pdf_path": "samples/llm_eval/raw/600036.SH-2020.pdf", "extract_status": "TODO"},
+    {"sample_id": 17, "company": "招商银行", "ticker": "600036.SH", "period": "FY2021", "pdf_path": "samples/llm_eval/raw/600036.SH-2021.pdf", "extract_status": "TODO"},
+    {"sample_id": 18, "company": "招商银行", "ticker": "600036.SH", "period": "FY2022", "pdf_path": "samples/llm_eval/raw/600036.SH-2022.pdf", "extract_status": "TODO"},
+    {"sample_id": 19, "company": "招商银行", "ticker": "600036.SH", "period": "FY2023", "pdf_path": "samples/llm_eval/raw/600036.SH-2023.pdf", "extract_status": "TODO"},
+    {"sample_id": 20, "company": "招商银行", "ticker": "600036.SH", "period": "FY2024", "pdf_path": "samples/llm_eval/raw/600036.SH-2024.pdf", "extract_status": "TODO"},
+    {"sample_id": 21, "company": "英伟达",   "ticker": "NVDA.US",   "period": "FY2020", "pdf_path": "samples/llm_eval/raw/NVDA.US-2020.pdf",   "extract_status": "TODO"},
+    {"sample_id": 22, "company": "英伟达",   "ticker": "NVDA.US",   "period": "FY2021", "pdf_path": "samples/llm_eval/raw/NVDA.US-2021.pdf",   "extract_status": "TODO"},
+    {"sample_id": 23, "company": "英伟达",   "ticker": "NVDA.US",   "period": "FY2022", "pdf_path": "samples/llm_eval/raw/NVDA.US-2022.pdf",   "extract_status": "TODO"},
+    {"sample_id": 24, "company": "英伟达",   "ticker": "NVDA.US",   "period": "FY2023", "pdf_path": "samples/llm_eval/raw/NVDA.US-2023.pdf",   "extract_status": "TODO"},
+    {"sample_id": 25, "company": "英伟达",   "ticker": "NVDA.US",   "period": "FY2024", "pdf_path": "samples/llm_eval/raw/NVDA.US-2024.pdf",   "extract_status": "TODO"}
+  ]
+}
