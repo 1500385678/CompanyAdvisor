@@ -171,6 +171,7 @@
 |---|---|---|---|
 | 2026-09-09 | v0.1 | 初稿:7 大类 23 通用字段 + 3 行业扩展位 + 5 跨字段一致性约束 + 3 批对齐建议 | 22-公司 cron 03:30 自补(因 .plan/20260909.md 不存在,沿用 08-29 T5 自补模式;§5 #6 已 13 日挂零,4/4 设计稿已闭合仍未启,起草底座供 3 行业评审) |
 | 2026-09-10 | v0.1.1 | 自补:追加 §9 v0.2 共识准备清单(4 边准备清单 + 第 1 批 11 字段语义判定问题 + 3 行业扩展位 9 字段待审阅 + 6 跑批前置检查);§5 #6 仍 `[ ]` | 22-公司 cron 03:30 自补(因 `.plan/20260910.md` 不存在,沿用 09-09 自补模式;v0.1 草稿维度饱和后,从"准备"维度补,降低张勇拉群时的"准备成本") |
+| 2026-09-11 | v0.1.2 | 自补:追加 §10 字段数据源映射表(23 通用字段 × 主源/备选/自动人工/备注 + 9 行业扩展字段 × 主源/备选/备注 + 7 条 v0.1.2 不做);§5 #6 仍 `[ ]` | 22-公司 cron 03:30 自补(因 `.plan/20260911.md` 不存在,沿用 09-09/09-10 自补模式;v0.1.1 准备清单饱和后,从"数据源"维度补,让 3 行业 v0.2 共识会议时每字段"语义 + 数据"两件事能并行讨论,降低"准备 → 共识"转化摩擦) |
 | (待定) | v0.2 | §2.1 + §2.4 + §2.5 第 1 批对齐后升 v0.2 | 张勇拉群 + 3 行业顾问共识 |
 | (待定) | v1.0 | 23 通用字段 + 3 行业扩展位 + §2.6 + §2.7 全部对齐 | 3 批对齐全部完成 |
 
@@ -246,3 +247,64 @@
 - **不**新增第 4 行业扩展位(沿用 v0.1 §3 仅 3 行业 17/20/23 的设计)
 - **不**替换 §2 通用 23 字段中的任一字段(本节只是为 §2 字段提供"判定问题 + 候选答案",不是字段修订)
 - **不**勾选 §5 #6 checkbox(共识未发生,本节只是"准备清单")
+
+---
+
+## §10 字段数据源映射表(v0.1.2 自补)
+
+> **v0.1.2 自补**(2026-09-11 03:30,22-公司 cron):在 v0.1.1 §9 准备清单的基础上,把 §2 通用 23 字段 + §3 行业扩展 9 字段 = 32 字段逐个对应到"数据源",让 3 行业顾问在 v0.2 共识会议时,**每个字段都能直接看到"数据从哪来"**——降低"语义对齐 + 数据落库"两步分离的复杂度。
+> **目的**:不替 3 行业定字段,但让每个字段"语义 + 数据"两件事能并行讨论;任 1 字段若 3 行业有不同数据源偏好,可在 §10.2 备注列追加。
+
+### 10.1 23 通用字段数据源映射
+
+> **数据源缩写**:`企查查`= `connector__qichacha__*` · `聚源`= `connector__hengsheng__*` · `招股书`= PDF 抽取(`scripts/pdfplumber_demo.py`)· `T1-T4 prompt`= LLM 抽取(`Inspiration/LLM基线/01-04 prompt`)· `T2 moat`= 护城河评分(`Inspiration/护城河/01 schema`)· `T4 事件`= 8 类事件(`Inspiration/LLM基线/08 设计稿`)
+
+| 字段 | 主数据源 | 备选 / 交叉验证 | 自动/人工 | 备注 |
+|---|---|---|---|---|
+| `name` | 企查查 `get_company_registration_info` | 聚源 `CompanyBasicInfo` | 自动 | 工商名优先;曾用名需补 `aliases` 数组(待 §9.2 判定) |
+| `ticker` | 聚源 `resolve_entity(entity_type=a_stock/hk_stock/us_stock)` | 企查查 `get_listing_info` | 自动 | 强制后缀 6 位(§5 C2);未上市公司 ticker 空 |
+| `market` | 聚源 `get_*_basic_info` | 工商登记 | 自动 | 5 枚举值(A/H/US/新三板/未上市);§9.2 判定中 |
+| `incorporation_date` | 企查查 `get_company_registration_info` | 聚源 `IpoIssuanceInfo`(上市日) | 自动 | §9.2 判定:双字段(成立 + 上市)? |
+| `hq_country` | 工商登记 | 聚源 `CompanyBasicInfo` | 自动 | 多总部公司存主总部;§9.2 判定中 |
+| `industry_l1` | 聚源 `StockBelongIndustry` | 22-公司种子清单 8 行业 | 自动 | §5 C7 沿用 22-公司 8 分类 |
+| `business_segments` | 招股书 §3 业务概况 | 年报 §3 业务讨论 | LLM (T1 财报速读) | 段文本 + 收入分项 |
+| `revenue_breakdown` | 聚源 `MainOperIncData` | 年报 §3 收入分项 | 自动 | 按地区/产品/客户维度 |
+| `key_products` | 招股书 | 年报 + 公司官网 | LLM (T1 摘要) | 1-3 个关键产品/服务 |
+| `revenue_5y` | 聚源 `StockMultiPeriodQuote` 或 `FinancialStatement` | 年报合并利润表 | 自动 | §5 C1 单位"亿元" |
+| `net_profit_5y` | 聚源 `FinancialStatement` | 年报合并利润表 | 自动 | 同 §5 C1 |
+| `gross_margin_5y` | 聚源 `FinancialAnalysis` | 自算:(营收-营业成本)/营收 | 自动 | §5 C3 标准口径 |
+| `roe_5y` | 聚源 `FinancialAnalysis` | 自算:归母净利/平均归母权益 | 自动 | §5 C4 平均分母 |
+| `current_ratio_5y` | 聚源 `FinancialAnalysis` | 年报合并资产负债表 | 自动 | 流动资产/流动负债 |
+| `top10_shareholders` | 聚源 `Top10ShareHolders` | 企查查 `get_shareholder_info` | 自动 | 工商口径,不含穿透 |
+| `actual_controller` | 企查查 `get_actual_controller` | 聚源 `ActualControllerDetail` | 自动(已穿透) | 3 分类(国资/外资/自然人);§9.2 判定中 |
+| `free_float_ratio` | 聚源 `StockShareStructure` | 巨潮限售股公告 | 自动 | §5 C8 计算口径;§9.2 判定中 |
+| `key_management` | 企查查 `get_key_personnel` | 聚源 `CompanyManagement` | 自动 | 含姓名/职务/任期;§9.2 判定在职状态字段 |
+| `board_independence` | 聚源年报"公司治理" | 企查查董监高信息 | 半自动 | §9.2 判定独立董事占比口径 |
+| `key_events_5y` | 聚源 `AShareAnnouncement` | 公开新闻 + 招股书 | LLM (T4 事件归因) | §5 C6 沿用 T4 8 类 |
+| `event_impact_dimensions` | T4 输出 `impact_dimensions` | T2 护城河 D1-D5 | LLM (T4 串联 T2) | 严格关联护城河 5 维 |
+| `moat_score` | 22-公司 T2 护城河评分 | 3 行业扩展自治 | LLM (T2) | §5 C5 沿用护城河 v0.1 5 维 |
+| `moat_evidence` | T2 护城河 Evidence Anchor | 招股书/年报原文 | LLM (T2 抽取) | 可点击回链到原文段落 |
+
+### 10.2 9 行业扩展字段数据源映射(3 行业 × 3 字段)
+
+| 行业 | 字段 | 主数据源 | 备选 | 备注 |
+|---|---|---|---|---|
+| 17-生物 | `pipeline_drugs` | 公司官网"研发管线" | 招股书 + 临床试验登记(ClinicalTrials.gov) | 半自动:LLM 抽取 + 人工核验 |
+| 17-生物 | `clinical_phase` | ClinicalTrials.gov | CDE(国家药监局) | enum:一/二/三/NDA/上市 |
+| 17-生物 | `fda_approval` | FDA Orange Book | Drugs@FDA | list:药品名 + 批准日 + 适应症 |
+| 20-经济 | `gdp_contribution` | 国家统计局 + 地方统计公报 | 公司年报"社会贡献"段 | float:亿元 |
+| 20-经济 | `policy_sensitivity` | 政策研究机构报告(国研/中金/中信) | 公司年报"政策风险"段 | enum:高/中/低(待 20-经济补) |
+| 20-经济 | `employment_scale` | 企查查 `get_annual_reports`(从业人数) | 公司年报"员工"段 | int:人 |
+| 23-盈利 | `unit_economics` | 招股书 + 财报"管理层讨论" | 同行业研报 | dict:单客户收入/毛利 |
+| 23-盈利 | `ltv_cac_ratio` | 招股书 + 财报 | 同行业研报 | float:LTV/CAC 倍数 |
+| 23-盈利 | `burn_rate` | 财报"现金流量表" | 招股书 | float:元/月(经营现金净流出) |
+
+### 10.3 v0.1.2 不做(本节边界)
+
+- **不**替 3 行业定字段(本节只列"数据源",不预判哪个数据源更准;若 3 行业有不同数据源偏好,在备注列追加)
+- **不**触发任何爬虫/数据拉取(本节只是"映射表",不实际调 connector)
+- **不**改 §2 通用 23 字段定义 / §3 行业扩展 9 字段定义(本节只是补充"数据从哪来",不修订"字段含义")
+- **不**新增第 4 行业(仍只规划 3 行业 17/20/23)
+- **不**勾选 §5 #6 checkbox(本节是"准备维度"的进一步细化,共识仍未发生)
+- **不**预设 LLM 抽取的 prompt(本节只标"T1/T2/T4 prompt",具体 prompt 仍走 22-公司 `Inspiration/LLM基线/01-04` 已闭合的 v0.1)
+- **不**列出 §5 C1-C7 的违反检测规则(本节是"正向映射",违规检测在 v0.2 共识后另起 §11 写)
