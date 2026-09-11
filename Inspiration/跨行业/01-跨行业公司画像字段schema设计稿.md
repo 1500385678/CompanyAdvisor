@@ -174,6 +174,7 @@
 | 2026-09-11 | v0.1.2 | 自补:追加 §10 字段数据源映射表(23 通用字段 × 主源/备选/自动人工/备注 + 9 行业扩展字段 × 主源/备选/备注 + 7 条 v0.1.2 不做);§5 #6 仍 `[ ]` | 22-公司 cron 03:30 自补(因 `.plan/20260911.md` 不存在,沿用 09-09/09-10 自补模式;v0.1.1 准备清单饱和后,从"数据源"维度补,让 3 行业 v0.2 共识会议时每字段"语义 + 数据"两件事能并行讨论,降低"准备 → 共识"转化摩擦) |
 | (待定) | v0.2 | §2.1 + §2.4 + §2.5 第 1 批对齐后升 v0.2 | 张勇拉群 + 3 行业顾问共识 |
 | (待定) | v1.0 | 23 通用字段 + 3 行业扩展位 + §2.6 + §2.7 全部对齐 | 3 批对齐全部完成 |
+| 2026-09-12 | v0.1.3 | 自补:追加 §11 Pydantic schema 雏形(32 字段 = 7 大类 + 3 行业扩展位,Pydantic V2 model + validator)+ §12 1 公司示例填值演示(贵州茅台 23 通用字段,自检 5 段:字段清单 / 校验通过 / ticker 无后缀报错 / 行业扩展错配报错 / JSON Schema 导出) + §13 v0.1.3 不做;落地独立文件 `02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py`(25 KB,可直接 `python3 ... --validate` 跑通);§5 #6 仍 `[ ]` | 22-公司 cron 03:30 自补(因 `.plan/20260912.md` 不存在,沿用 09-09/10/11 自补模式;v0.1.2 数据源饱和后,从"机器可读"维度补,让 3 行业 v0.2 共识会议时能在 IDE 里直接看字段类型/必填性/默认值/validator 行为,降低"文档 → 实施"转译摩擦;**§5 #6 子项 0/1(草稿准备维度 1.2 → 1.3 增量 · 共识 0 不变 · 不擅自勾选)**;**实质闭合度 9/14(64.3%) 持平**(机器可读维度 +0.1 不影响闭合判定) |
 
 ---
 
@@ -308,3 +309,155 @@
 - **不**勾选 §5 #6 checkbox(本节是"准备维度"的进一步细化,共识仍未发生)
 - **不**预设 LLM 抽取的 prompt(本节只标"T1/T2/T4 prompt",具体 prompt 仍走 22-公司 `Inspiration/LLM基线/01-04` 已闭合的 v0.1)
 - **不**列出 §5 C1-C7 的违反检测规则(本节是"正向映射",违规检测在 v0.2 共识后另起 §11 写)
+
+---
+
+## §11 Pydantic schema 雏形(v0.1.3 自补)
+
+> **v0.1.3 自补**(2026-09-12 03:30,22-公司 cron):把 §2 通用 23 字段 + §3 行业扩展 9 字段 = 32 字段定义翻译为 **Pydantic V2 model** —— 让 3 行业 v0.2 共识会议前能在 IDE 里直接看字段类型 / 必填性 / 默认值 / validator 行为,降低"文档 → 实施"转译摩擦;落地的独立可运行文件见 [`02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py`](./02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py)(25 KB,可 `python3 ... --validate` 自检)。
+> **目的**:本节把 §10 数据源映射中"自动"标记的字段,先在 Pydantic 层固化为 validator(类型 / 范围 / 必填性 / §5 C2 ticker 后缀),让真跑前能离线 dryrun 校验;**仍不替 3 行业定字段语义,仅固化"机械性"约束**。
+
+### 11.1 模型分层(7 + 3 共 10 个 BaseModel)
+
+| 层 | 类名 | 字段数 | 对应章节 |
+|---|---|---|---|
+| §2.1 | `BasicInfo` | 6 | 基本信息 |
+| §2.2 | `BusinessStructure` (+ `BusinessSegment`) | 3 | 业务结构 |
+| §2.3 | `Financial5Y` | 5 | 财务 5 年 |
+| §2.4 | `EquityControl` (+ `Shareholder`) | 3 | 股权与控制 |
+| §2.5 | `Management` (+ `Manager`) | 2 | 管理层 |
+| §2.6 | `Events5Y` (+ `KeyEvent`) | 2 | 事件 5 年 |
+| §2.7 | `Moat` | 2 | 护城河 |
+| §3.1 | `IndustryExtensionBio` | 3 | 17-生物 扩展 |
+| §3.2 | `IndustryExtensionMacro` | 3 | 20-经济 扩展 |
+| §3.3 | `IndustryExtensionProfitability` (+ `UnitEconomics`) | 3 | 23-盈利 扩展 |
+| 顶层 | `CrossIndustryCompanyProfile` | 10(7 必填 + 3 行业扩展可空) | 32 字段聚合 |
+
+### 11.2 已固化的 5 类 validator(机器可校验,无需人判定)
+
+| # | 约束 | 类型 | 错误示例 | 对应 §5 一致性 |
+|---|---|---|---|---|
+| 1 | `ticker` 6 位代码必须带后缀 | `field_validator` | `"600519"` → 报错 | C2 |
+| 2 | `key_products` 数量 ≤ 5 | `field_validator` | 6 个产品名 → 报错 | (规范 1-3) |
+| 3 | 财务 5 年时间窗长度 = 5 | `Field(min_length=5, max_length=5)` | 4 年 → 报错 | (5 年窗) |
+| 4 | 财务百分比在 [-100, 100] | `field_validator` | 毛利率 200% → 报错 | (范围) |
+| 5 | `top10_shareholders` 合计 ≤ 100% | `field_validator` | 合计 110% → 报错 | (一致性) |
+| 6 | 3 行业扩展位最多填 1 个 | `model_validator` | 同时填 2 个 → 报错 | (互斥) |
+| 7 | `bio_extension` 必仅 PHARMA 行业 | `model_validator` | 消费行业填 bio → 报错 | (互斥) |
+| 8 | `moat_score` vs `moat_type` 粗校 | `model_validator`(warn) | 92 分 + 浅 → warning | C5 |
+
+> **以上 8 项**不替 3 行业判定语义,只校验"机械性"约束(类型 / 范围 / 必填 / 互斥 / 后缀格式);**v0.2 共识会议上 3 行业如对 C1-C7 增/改/删,本节 validator 同步调整**。
+
+### 11.3 §9.2 11 字段语义判定问题 → Pydantic 字段映射
+
+| 字段 | §9.2 判定候选 | Pydantic 当前实现 | 22-公司倾向 |
+|---|---|---|---|
+| `name` | A 单字段 + 历史名数组 / B 双字段 | 单字段 `name`(待 v0.2 决定是否加 `aliases`) | A(简) |
+| `ticker` | A 强制后缀 / B 选填 | `field_validator` 强制后缀 | A(跨市场可比) |
+| `market` | A 5 值 / B 3 值 | `Market` enum 5 值 | A(覆盖广) |
+| `incorporation_date` | A 单字段 / B 双字段 | 单字段(待 v0.2 决定是否加 `listing_date`) | B(投资视角) |
+| `hq_country` | A 主总部 / B 多总部数组 | 单字段(待 v0.2 决定是否加 `hq_country_list`) | A(简) |
+| `industry_l1` | A 沿用 8 类 / B GB/T 4754 | `IndustryL1` enum 8 值 | A(对齐种子清单) |
+| `top10_shareholders` | A 沿用工商口径 / B 增加穿透 | 单层 + 不含穿透 | A(简) |
+| `actual_controller` | A 3 分类 / B 6 分类 | `ActualControllerType` enum 3 值 | A(简) |
+| `free_float_ratio` | A 总流通/总股本 / B 限售股单独字段 | `float` 0-100 | A(标准) |
+| `key_management` | A 含状态 / B 仅任期 | `Manager` 含 `in_office` 布尔 | A(投资视角) |
+| `board_independence` | A 标准 / B 排除董事长 | `float` 0-100(标准口径) | A(标准) |
+
+> **当前实现 = 22-公司 1 边的初判**,v0.2 共识会议 3 行业 + 22-公司 4 边共同决定;Pydantic 改 1 行 enum 值或加 1 个字段,不必动整体结构。
+
+---
+
+## §12 1 公司示例填值演示(贵州茅台 2024)
+
+> **v0.1.3 自补**:沿用 22-公司 `Inspiration/公司/01-种子公司清单.md` 行业 1 第 1 家(贵州茅台 600519.SH · 消费),演示按 schema 填 23 通用字段;因茅台 industry_l1=消费,3 行业扩展位均不填。**示例数据按 2024 年报口径手填,Phase 1 接通 connector 后会替换为 `connector__hengsheng__*` 真实拉取**。
+
+### 12.1 填值结构(23 通用 + 0 行业扩展)
+
+```json
+{
+  "basic_info": {
+    "name": "贵州茅台酒股份有限公司",
+    "ticker": "600519.SH",
+    "market": "A",
+    "incorporation_date": "1999-11-20",
+    "hq_country": "中国",
+    "industry_l1": "消费"
+  },
+  "business": {
+    "business_segments": [
+      {"name": "茅台酒", "revenue": 1259.0, "gross_margin": 94.5},
+      {"name": "系列酒", "revenue": 209.0, "gross_margin": 79.0}
+    ],
+    "revenue_breakdown": {"国内_茅台酒": 1220.0, "国内_系列酒": 198.0, "国外": 50.0},
+    "key_products": ["53度飞天茅台", "茅台1935", "茅台王子酒"]
+  },
+  "financial": {
+    "revenue_5y": [854.0, 949.0, 1062.0, 1241.0, 1505.0],
+    "net_profit_5y": [467.0, 524.0, 627.0, 747.0, 893.0],
+    "gross_margin_5y": [91.5, 91.8, 92.0, 92.1, 92.1],
+    "roe_5y": [31.4, 30.0, 32.0, 34.0, 36.0],
+    "debt_ratio_5y": [16.0, 17.0, 18.0, 19.0, 19.5]
+  },
+  "equity": {
+    "top10_shareholders": [
+      {"name": "中国贵州茅台酒厂(集团)有限责任公司", "ratio": 54.0},
+      {"name": "香港中央结算有限公司", "ratio": 6.5},
+      {"name": "贵州省国有资本运营有限责任公司", "ratio": 4.5}
+    ],
+    "actual_controller": "国资",
+    "free_float_ratio": 46.0
+  },
+  "management": {
+    "key_management": [
+      {"name": "丁雄军", "title": "董事长", "tenure_start": "2021-09-01", "in_office": true},
+      {"name": "张德芹", "title": "总经理", "tenure_start": "2024-04-01", "in_office": true}
+    ],
+    "board_independence": 38.0
+  },
+  "events": {
+    "key_events_5y": [
+      {"event_date": "2024-06-15", "category": "产品发布", "summary": "推出茅台1935 2.0 升级版", "impact_dimensions": ["brand"]},
+      {"event_date": "2023-12-20", "category": "管理层变动", "summary": "丁雄军连任董事长,张德芹任总经理", "impact_dimensions": ["brand"]}
+    ],
+    "regulatory_actions_5y": []
+  },
+  "moat": {"moat_score": 92, "moat_type": "强"},
+  "bio_extension": null,
+  "macro_extension": null,
+  "profitability_extension": null
+}
+```
+
+### 12.2 自检 5 段(运行 `python3 02-...py` 即可复现)
+
+| # | 段 | 预期 | 实测 |
+|---|---|---|---|
+| §A | schema 字段清单(7 + 3 = 10 顶层) | 10 | ✅ 10 |
+| §B | Pydantic 校验贵州茅台示例 | 校验通过,产出 profile 对象 | ✅ 校验通过 |
+| §C | ticker=`"600519"` 故意缺后缀 | ValidationError | ✅ ValidationError(C2 触发) |
+| §D | 消费行业填 bio_extension | ValidationError | ✅ ValidationError(行业互斥触发) |
+| §E | JSON Schema 导出(properties 10 / required 7) | 10 properties / 7 required | ✅ 10 / 7 |
+
+> **自检已通过**(`python3 02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py` 在 2026-09-12 03:30 跑通;Pydantic 2.13.4)——意味着 v0.2 共识会议后,**3 行业评审 23 通用字段语义时,可同时跑 1 份示例校验,所见即所得**。
+
+### 12.3 v0.1.3 不演示(本节边界)
+
+- **不**演示 3 行业扩展位的示例(等 3 行业 v0.2 共识后,选 1 个生物/经济/盈利公司示例填入;本节仅演示 23 通用字段)
+- **不**触发任何 connector(本节数据按 2024 年报口径手填,Phase 1 实施时用 `connector__hengsheng__*` + `connector__qichacha__*` 真实拉取替换)
+- **不**演示 v0.2 升版后的字段(若 3 行业 v0.2 决定加 `aliases` / `listing_date` 等字段,本 §12.1 JSON 需补;先按 v0.1.3 实现展示)
+- **不**演示 T1-T4 prompt 输出集成(本节只演示"结构化字段",不演示"LLM 抽取结果";LLM 抽取接入是 Phase 1 工程栈工作)
+
+---
+
+## §13 v0.1.3 不做(本节边界)
+
+- **不**替 3 行业定字段语义(本节只固化"机械性"validator,语义判定仍由 §9.2 11 字段判定问题 + 9 扩展字段待审阅表管)
+- **不**触发任何 connector / 真实数据拉取(本节示例为手填,Phase 1 实施时再接通)
+- **不**新增第 4 行业(仍只规划 3 行业 17 / 20 / 23)
+- **不**改 §2 通用 23 字段定义 / §3 行业扩展 9 字段定义(本节只是把"定义"翻译为 Pydantic,不是字段修订)
+- **不**勾选 §5 #6 checkbox(本节是"准备维度"的进一步细化,共识仍未发生;沿用 09-09/10/11 自补模式,**草稿准备维度 1.2 → 1.3 增量,共识 0 不变 · §5 #6 子项仍 0/1**)
+- **不**预设 T1-T4 prompt 的 v0.2 升级(具体 prompt 仍走 22-公司 `Inspiration/LLM基线/01-04` 已闭合的 v0.1)
+- **不**覆盖 §5 C1-C7 违规检测(原 §10.3 承诺的"§11 写违规检测"顺延:本 v0.1.3 §11 = Pydantic 雏形(机器可读准备维度),v0.2 共识后写违规检测时再按需重排为新 §14 或附录;**§5 C1-C7 违规检测是 v0.2 共识会议后的工作**,本节不抢跑)
+- **不**输出 JSON Schema 文件(本节只输出 Pydantic 雏形 .py;`model_json_schema()` 方法可派生,但 v0.2 共识前不固化 JSON Schema 文件版本)
+- **不**写 README 章节(本节落在 schema 设计稿 + 独立 .py 文件,README 同步等 v0.2 共识时再统一)
