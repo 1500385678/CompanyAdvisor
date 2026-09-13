@@ -1,19 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-跨行业公司画像 schema · Pydantic 雏形 · v0.1.3
+跨行业公司画像 schema · Pydantic 雏形 · v0.1.4
 ================================================
 
 > 对应主计划:[项目开发计划.md §5 第 6 项](../../项目开发计划.md) - 跨行业顾问对齐
 > 状态:**草稿**(等张勇拉 17-生物 / 20-经济 / 23-盈利 3 顾问对齐后,可能升 v0.2)
 > 维护:22-公司-Company 行业顾问
-> 落地日期:2026-09-12
-> 对应章节:Inspiration/跨行业/01-跨行业公司画像字段schema设计稿.md §11
+> 落地日期:2026-09-12(v0.1.3) / 2026-09-14(v0.1.4 跨行业 5 公司 dryrun)
+> 对应章节:Inspiration/跨行业/01-跨行业公司画像字段schema设计稿.md §11/§12(v0.1.3)+ §14(v0.1.4)
 > 不做什么:不对齐(对齐仍由张勇驱动);不勾选 §5 #6 checkbox(对齐未发生)
 
 ## 用途
 - 把 §2 通用 23 字段 + §3 行业扩展 9 字段 = 32 字段定义翻译为 Pydantic V2 model
-- 1 公司示例填值演示(贵州茅台:23 通用字段 + 0 行业扩展)
-- v0.2 共识会议前,可让 3 行业直接在 IDE 里看字段类型 + 必填性 + 默认值
+- 5 公司跨行业示例填值(覆盖 5 个 industry_l1 + 3 个扩展位):
+  · 贵州茅台 600519.SH(消费,无扩展)
+  · 恒瑞医药 600276.SH(医药,bio_extension · 17-生物)
+  · 腾讯控股 0700.HK(互联网,profitability_extension · 23-盈利)
+  · 招商银行 600036.SH(金融,macro_extension · 20-经济)
+  · 宁德时代 300750.SZ(新能源,无扩展,验证 §5 C7 8 分类)
+- v0.2 共识会议前,可让 3 行业直接在 IDE 里看字段类型 + 必填性 + 默认值 + 跨行业样例
 - Phase 1 MVP 实施时,直接复制本模块到 `src/schemas/cross_industry.py`
 
 ## 字段对照(全部 32 字段)
@@ -27,9 +32,16 @@
 - §3 行业扩展位(9):pipeline_drugs, clinical_phase, fda_approval, gdp_contribution,
                    policy_sensitivity, employment_scale, unit_economics, ltv_cac_ratio, burn_rate
 
+## v0.1.4 vs v0.1.3 变更
+- 加 4 家公司示例(恒瑞医药 / 腾讯控股 / 招商银行 / 宁德时代)→ ALL_EXAMPLES 字典(5 家)
+- 主自检 main() 加 §F 跨行业 5 公司批量 dryrun
+- §A-§E 5 段自检(贵州茅台单家)保持不变,作为 §F 前置
+- 修复 v0.1.3 提及的"1 公司示例"为"5 公司示例"
+
 ## 依赖
 - pydantic >= 2.0(本机验证 pydantic 2.13.4)
 - 运行:`python3 02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py --validate`
+  (文件名保留 v0.1.3 后缀,因 schema 主体未变,内容演进为 v0.1.4)
 """
 
 import sys
@@ -558,16 +570,400 @@ MAOTAI_2024_EXAMPLE: Dict[str, Any] = {
 
 
 # ============================================================================
+# §12 v0.1.4 跨行业 4 公司补充示例(恒瑞医药 / 腾讯控股 / 招商银行 / 宁德时代)
+# 覆盖 5 industry_l1 × 3 扩展位:消费/医药/互联网/金融/新能源
+# ============================================================================
+
+HENGRUI_2024_EXAMPLE: Dict[str, Any] = {
+    "basic_info": {
+        "name": "江苏恒瑞医药股份有限公司",
+        "ticker": "600276.SH",
+        "market": "A",
+        "incorporation_date": "1997-04-28",
+        "hq_country": "中国",
+        "industry_l1": "医药",
+    },
+    "business": {
+        "business_segments": [
+            {"name": "抗肿瘤药", "revenue": 138.0, "gross_margin": 91.0},
+            {"name": "造影剂", "revenue": 22.0, "gross_margin": 70.0},
+            {"name": "其他药品", "revenue": 26.0, "gross_margin": 65.0},
+        ],
+        "revenue_breakdown": {
+            "国内_抗肿瘤": 132.0,
+            "国内_造影剂": 20.0,
+            "国外": 34.0,
+        },
+        "key_products": ["PD-1 卡瑞利珠单抗", "紫杉醇白蛋白结合型", "碘佛醇"],
+    },
+    "financial": {
+        "revenue_5y": [165.0, 188.0, 212.0, 228.0, 280.0],         # 2020-2024
+        "net_profit_5y": [38.0, 45.0, 39.0, 43.0, 54.0],
+        "gross_margin_5y": [87.0, 86.0, 84.0, 84.0, 85.0],
+        "roe_5y": [16.0, 16.0, 12.0, 12.0, 14.0],
+        "debt_ratio_5y": [10.0, 11.0, 8.0, 9.0, 10.0],
+    },
+    "equity": {
+        "top10_shareholders": [
+            {"name": "江苏恒瑞医药集团有限公司", "ratio": 24.0},
+            {"name": "香港中央结算有限公司", "ratio": 12.0},
+            {"name": "中国证券金融股份有限公司", "ratio": 2.5},
+        ],
+        "actual_controller": "自然人",  # 孙飘扬
+        "free_float_ratio": 99.0,
+    },
+    "management": {
+        "key_management": [
+            {
+                "name": "孙飘扬",
+                "title": "董事长",
+                "tenure_start": "2021-01-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+            {
+                "name": "戴洪斌",
+                "title": "总经理",
+                "tenure_start": "2022-04-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+        ],
+        "board_independence": 42.0,
+    },
+    "events": {
+        "key_events_5y": [
+            {
+                "event_date": "2024-05-20",
+                "category": "产品发布",
+                "summary": "PD-L1 阿得贝利单抗获批,联合化疗一线治疗 ES-SCLC",
+                "impact_dimensions": ["tech", "license"],
+            },
+            {
+                "event_date": "2023-09-15",
+                "category": "其他",
+                "summary": "与默克达成 14 亿欧元 ADC 药物海外授权交易",
+                "impact_dimensions": ["tech", "brand"],
+            },
+        ],
+        "regulatory_actions_5y": [],
+    },
+    "moat": {
+        "moat_score": 75,
+        "moat_type": "中",  # 75 在 [60, 80),符合区间
+    },
+    # 恒瑞医药 industry_l1=医药,17-生物 bio_extension 应填
+    "bio_extension": {
+        "pipeline_drugs": ["SHR-1701(PD-L1/TGF-β)", "SHR-A1811(HER2 ADC)", "SHR-1316(PD-L1)"],
+        "clinical_phase": "三",  # 多个产品进入 III 期或 NDA
+        "fda_approval": [
+            "卡瑞利珠单抗(2024-Q4 美国 III 期启动,未获批)",
+        ],
+    },
+    "macro_extension": None,
+    "profitability_extension": None,
+}
+
+
+TENCENT_2024_EXAMPLE: Dict[str, Any] = {
+    "basic_info": {
+        "name": "腾讯控股有限公司",
+        "ticker": "0700.HK",  # §5 C2 港股代码需 4 位 + .HK
+        "market": "H",
+        "incorporation_date": "1999-11-23",
+        "hq_country": "中国",
+        "industry_l1": "互联网",
+    },
+    "business": {
+        "business_segments": [
+            {"name": "增值服务(游戏+社交网络)", "revenue": 3200.0, "gross_margin": 55.0},
+            {"name": "网络广告", "revenue": 1200.0, "gross_margin": 55.0},
+            {"name": "金融科技及企业服务", "revenue": 2200.0, "gross_margin": 35.0},
+        ],
+        "revenue_breakdown": {
+            "国内_游戏": 2800.0,
+            "国内_广告": 1100.0,
+            "国内_FinTech": 1800.0,
+            "国外_游戏": 400.0,
+        },
+        "key_products": ["微信(WeChat)", "王者荣耀", "英雄联盟", "腾讯视频"],
+    },
+    "financial": {
+        "revenue_5y": [4820.0, 5601.0, 6490.0, 6090.0, 6600.0],   # 2020-2024(亿元)
+        "net_profit_5y": [1598.0, 2248.0, 1887.0, 1576.0, 1940.0],
+        "gross_margin_5y": [46.0, 44.0, 43.0, 45.0, 47.0],
+        "roe_5y": [28.0, 29.0, 25.0, 21.0, 24.0],
+        "debt_ratio_5y": [42.0, 41.0, 40.0, 41.0, 40.0],
+    },
+    "equity": {
+        "top10_shareholders": [
+            {"name": "Naspers/Prosus", "ratio": 24.0},
+            {"name": "马化腾", "ratio": 8.0},
+            {"name": "香港中央结算(代理人)", "ratio": 22.0},
+        ],
+        "actual_controller": "自然人",  # 马化腾
+        "free_float_ratio": 68.0,
+    },
+    "management": {
+        "key_management": [
+            {
+                "name": "马化腾",
+                "title": "董事会主席兼CEO",
+                "tenure_start": "1999-11-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+            {
+                "name": "刘炽平",
+                "title": "总裁兼执行董事",
+                "tenure_start": "2005-02-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+        ],
+        "board_independence": 50.0,  # 港股披露要求,假设 50%
+    },
+    "events": {
+        "key_events_5y": [
+            {
+                "event_date": "2024-09-10",
+                "category": "产品发布",
+                "summary": "推出混元大模型 Turbo 版本,对标 GPT-4o",
+                "impact_dimensions": ["tech", "brand"],
+            },
+            {
+                "event_date": "2022-12-15",
+                "category": "监管",
+                "summary": "游戏版号恢复发放,《王者荣耀》新皮肤获批",
+                "impact_dimensions": ["license", "brand"],
+            },
+        ],
+        "regulatory_actions_5y": [
+            {
+                "event_date": "2021-07-24",
+                "category": "监管",
+                "summary": "腾讯被要求解除网络音乐独家版权",
+                "impact_dimensions": ["license", "network"],
+            },
+        ],
+    },
+    "moat": {
+        "moat_score": 88,
+        "moat_type": "强",  # 88 在 [80, 100)
+    },
+    # 腾讯 industry_l1=互联网,23-盈利 profitability_extension 应填
+    "bio_extension": None,
+    "macro_extension": None,
+    "profitability_extension": {
+        "unit_economics": {
+            "revenue_per_customer": 2200.0,  # 假设每用户年均贡献 2200 元
+            "gross_margin_per_customer": 1034.0,  # 47% 毛利率
+        },
+        "ltv_cac_ratio": 4.5,  # 假设 LTV/CAC = 4.5
+        "burn_rate": 0.0,  # 腾讯正现金流,burn_rate = 0
+    },
+}
+
+
+CMB_2024_EXAMPLE: Dict[str, Any] = {
+    "basic_info": {
+        "name": "招商银行股份有限公司",
+        "ticker": "600036.SH",
+        "market": "A",
+        "incorporation_date": "1987-03-31",
+        "hq_country": "中国",
+        "industry_l1": "金融",
+    },
+    "business": {
+        "business_segments": [
+            {"name": "零售金融", "revenue": 2000.0, "gross_margin": None},  # 银行不适用毛利率口径
+            {"name": "批发金融", "revenue": 1500.0, "gross_margin": None},
+            {"name": "其他业务", "revenue": 150.0, "gross_margin": None},
+        ],
+        "revenue_breakdown": {
+            "利息净收入": 2150.0,
+            "手续费及佣金净收入": 720.0,
+            "其他非息收入": 780.0,
+        },
+        "key_products": ["招商银行App", "朝朝宝", "金葵花理财"],
+    },
+    "financial": {
+        "revenue_5y": [2905.0, 3313.0, 3448.0, 3392.0, 3650.0],  # 营业收入(亿元)
+        "net_profit_5y": [973.0, 1199.0, 1380.0, 1466.0, 1640.0],
+        "gross_margin_5y": [50.0, 52.0, 50.0, 49.0, 51.0],  # 银行净息差+非息收入占比粗算
+        "roe_5y": [16.0, 17.0, 17.0, 16.0, 16.0],
+        "debt_ratio_5y": [91.0, 91.0, 90.0, 90.0, 90.0],  # 银行高杠杆,负债率天然高
+    },
+    "equity": {
+        "top10_shareholders": [
+            {"name": "招商局集团有限公司", "ratio": 29.0},
+            {"name": "香港中央结算有限公司", "ratio": 18.0},
+            {"name": "中国证券金融股份有限公司", "ratio": 2.5},
+        ],
+        "actual_controller": "国资",  # 招商局集团
+        "free_float_ratio": 70.0,
+    },
+    "management": {
+        "key_management": [
+            {
+                "name": "缪建民",
+                "title": "董事长",
+                "tenure_start": "2020-09-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+            {
+                "name": "王良",
+                "title": "行长兼执行董事",
+                "tenure_start": "2022-05-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+        ],
+        "board_independence": 38.0,
+    },
+    "events": {
+        "key_events_5y": [
+            {
+                "event_date": "2024-04-10",
+                "category": "其他",
+                "summary": "零售客户 AUM 突破 14 万亿,稳居股份行第一",
+                "impact_dimensions": ["brand", "network"],
+            },
+            {
+                "event_date": "2023-08-25",
+                "category": "监管",
+                "summary": "因代销信托产品违规被罚 350 万",
+                "impact_dimensions": ["license"],
+            },
+        ],
+        "regulatory_actions_5y": [],
+    },
+    "moat": {
+        "moat_score": 85,
+        "moat_type": "强",  # 85 在 [80, 100)
+    },
+    # 招商银行 industry_l1=金融,20-经济 macro_extension 应填(在 §11 校验白名单内)
+    "bio_extension": None,
+    "macro_extension": {
+        "gdp_contribution": 350.0,  # 假设 2024 年贡献 GDP 350 亿元(税收+利润)
+        "policy_sensitivity": "高",  # 银行业受货币政策/监管政策高敏感
+        "employment_scale": 110000,  # 约 11 万员工
+    },
+    "profitability_extension": None,
+}
+
+
+CATL_2024_EXAMPLE: Dict[str, Any] = {
+    "basic_info": {
+        "name": "宁德时代新能源科技股份有限公司",
+        "ticker": "300750.SZ",
+        "market": "A",
+        "incorporation_date": "2011-12-16",
+        "hq_country": "中国",
+        "industry_l1": "新能源",
+    },
+    "business": {
+        "business_segments": [
+            {"name": "动力电池系统", "revenue": 2530.0, "gross_margin": 23.0},
+            {"name": "储能电池系统", "revenue": 670.0, "gross_margin": 25.0},
+            {"name": "电池材料及回收", "revenue": 240.0, "gross_margin": 15.0},
+        ],
+        "revenue_breakdown": {
+            "国内_动力电池": 2100.0,
+            "国内_储能": 540.0,
+            "国外_动力电池": 430.0,
+            "国外_储能": 130.0,
+        },
+        "key_products": ["麒麟电池", "神行超充电池", "CTP 3.0 电池包"],
+    },
+    "financial": {
+        "revenue_5y": [503.0, 1304.0, 3286.0, 4009.0, 3620.0],   # 2020-2024(亿元)
+        "net_profit_5y": [55.0, 159.0, 307.0, 441.0, 507.0],
+        "gross_margin_5y": [27.8, 26.5, 19.1, 22.9, 24.4],
+        "roe_5y": [14.0, 22.0, 19.0, 22.0, 21.0],
+        "debt_ratio_5y": [60.0, 65.0, 70.0, 70.0, 68.0],
+    },
+    "equity": {
+        "top10_shareholders": [
+            {"name": "宁波瑞庭投资有限公司", "ratio": 23.0},  # 曾毓群控股
+            {"name": "香港中央结算有限公司", "ratio": 15.0},
+            {"name": "黄世霖", "ratio": 5.0},
+        ],
+        "actual_controller": "自然人",  # 曾毓群
+        "free_float_ratio": 75.0,
+    },
+    "management": {
+        "key_management": [
+            {
+                "name": "曾毓群",
+                "title": "董事长兼总经理",
+                "tenure_start": "2011-12-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+            {
+                "name": "周佳",
+                "title": "副董事长",
+                "tenure_start": "2017-06-01",
+                "tenure_end": None,
+                "in_office": True,
+            },
+        ],
+        "board_independence": 40.0,
+    },
+    "events": {
+        "key_events_5y": [
+            {
+                "event_date": "2024-12-05",
+                "category": "产品发布",
+                "summary": "麒麟二代电池量产,续航 1000 公里",
+                "impact_dimensions": ["tech", "brand"],
+            },
+            {
+                "event_date": "2023-10-15",
+                "category": "融资",
+                "summary": "赴港交所二次上市,募资 53 亿美元",
+                "impact_dimensions": ["cost", "brand"],
+            },
+        ],
+        "regulatory_actions_5y": [],
+    },
+    "moat": {
+        "moat_score": 82,
+        "moat_type": "强",  # 82 在 [80, 100)
+    },
+    # 宁德时代 industry_l1=新能源,3 行业扩展位均不填(无对应扩展位)
+    "bio_extension": None,
+    "macro_extension": None,
+    "profitability_extension": None,
+}
+
+
+# §12 v0.1.4 ALL_EXAMPLES 聚合:5 家公司 · 5 industry_l1 · 3 个扩展位
+ALL_EXAMPLES: Dict[str, Dict[str, Any]] = {
+    "贵州茅台_600519.SH_消费": MAOTAI_2024_EXAMPLE,
+    "恒瑞医药_600276.SH_医药_bio": HENGRUI_2024_EXAMPLE,
+    "腾讯控股_0700.HK_互联网_profitability": TENCENT_2024_EXAMPLE,
+    "招商银行_600036.SH_金融_macro": CMB_2024_EXAMPLE,
+    "宁德时代_300750.SZ_新能源": CATL_2024_EXAMPLE,
+}
+
+
+# ============================================================================
 # 自检入口(运行 `python3 02-跨行业schema-Pydantic雏形-v0.1.3.py --validate` 验证)
 # ============================================================================
 
 def main() -> int:
-    """v0.1.3 雏形自检 - 验证贵州茅台示例可通过 schema 校验"""
+    """v0.1.4 雏形自检 - 验证 5 公司跨行业示例可通过 schema 校验"""
     print("=" * 70)
-    print("跨行业公司画像 schema v0.1.3 - Pydantic 雏形自检")
+    print("跨行业公司画像 schema v0.1.4 - Pydantic 雏形自检(5 公司 dryrun)")
     print("=" * 70)
-    print(f"字段数:23 通用 + 9 行业扩展 = 32(本示例填 23 通用,行业扩展均 None)")
-    print(f"示例公司:贵州茅台(600519.SH) · 2024 年报")
+    print(f"字段数:23 通用 + 9 行业扩展 = 32")
+    print(f"示例公司:5 家(覆盖 5 industry_l1 × 3 扩展位)")
+    print(f"  · 贵州茅台(消费,无扩展) · 恒瑞医药(医药,bio)")
+    print(f"  · 腾讯控股(互联网,profitability) · 招商银行(金融,macro)")
+    print(f"  · 宁德时代(新能源,无扩展)")
     print(f"Pydantic 版本:{sys.modules['pydantic'].VERSION}")
     print("-" * 70)
 
@@ -632,8 +1028,46 @@ def main() -> int:
     print(f"  schema properties 字段数: {len(json_schema.get('properties', {}))}")
     print(f"  required 字段数: {len(json_schema.get('required', []))}")
 
+    # §F v0.1.4 跨行业 5 公司批量 dryrun
+    print("\n[§F] v0.1.4 跨行业 5 公司批量 dryrun(覆盖 5 industry_l1 × 3 扩展位):")
+    success_count = 0
+    fail_count = 0
+    ext_filled_map = {
+        "贵州茅台_600519.SH_消费": [],
+        "恒瑞医药_600276.SH_医药_bio": ["bio_extension"],
+        "腾讯控股_0700.HK_互联网_profitability": ["profitability_extension"],
+        "招商银行_600036.SH_金融_macro": ["macro_extension"],
+        "宁德时代_300750.SZ_新能源": [],
+    }
+    for name, data in ALL_EXAMPLES.items():
+        try:
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                profile = CrossIndustryCompanyProfile(**data)
+                ind = profile.basic_info.industry_l1.value
+                ticker = profile.basic_info.ticker
+                rev_2024 = profile.financial.revenue_5y[-1]
+                moat_s = profile.moat.moat_score
+                exts = ext_filled_map[name]
+                ext_str = "+".join(exts) if exts else "no-ext"
+                w_count = len(w)
+                w_marker = f" [⚠️{w_count} warnings]" if w_count else ""
+                print(
+                    f"  ✅ {ticker:>12s} | {ind:4s} | {ext_str:18s} | "
+                    f"营收{rev_2024:6.0f}亿 | moat={moat_s:3d} | {name.split('_')[0]}{w_marker}"
+                )
+                success_count += 1
+        except Exception as e:  # noqa: BLE001
+            print(f"  ❌ {name} 校验失败: {e}")
+            fail_count += 1
+    print(f"  汇总:{success_count} 通过 / {fail_count} 失败(预期 5/0)")
+
+    if fail_count > 0:
+        print("  ❌ 批量 dryrun 存在失败,v0.1.4 雏形未通过")
+        return 1
+
     print("\n" + "=" * 70)
-    print("v0.1.3 Pydantic 雏形自检完成")
+    print("v0.1.4 Pydantic 雏形自检完成(5 公司全部通过)")
     print("=" * 70)
     return 0
 
