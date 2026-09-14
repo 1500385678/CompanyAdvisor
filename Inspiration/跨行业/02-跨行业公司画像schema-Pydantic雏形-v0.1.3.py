@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-跨行业公司画像 schema · Pydantic 雏形 · v0.1.4
+跨行业公司画像 schema · Pydantic 雏形 · v0.1.5
 ================================================
 
 > 对应主计划:[项目开发计划.md §5 第 6 项](../../项目开发计划.md) - 跨行业顾问对齐
 > 状态:**草稿**(等张勇拉 17-生物 / 20-经济 / 23-盈利 3 顾问对齐后,可能升 v0.2)
 > 维护:22-公司-Company 行业顾问
-> 落地日期:2026-09-12(v0.1.3) / 2026-09-14(v0.1.4 跨行业 5 公司 dryrun)
-> 对应章节:Inspiration/跨行业/01-跨行业公司画像字段schema设计稿.md §11/§12(v0.1.3)+ §14(v0.1.4)
+> 落地日期:2026-09-12(v0.1.3) / 2026-09-14(v0.1.4 跨行业 5 公司 dryrun) / 2026-09-15(v0.1.5 跨行业对比矩阵)
+> 对应章节:Inspiration/跨行业/01-跨行业公司画像字段schema设计稿.md §11/§12(v0.1.3)+ §14(v0.1.4)+ §15(v0.1.5)
 > 不做什么:不对齐(对齐仍由张勇驱动);不勾选 §5 #6 checkbox(对齐未发生)
 
 ## 用途
@@ -18,7 +18,8 @@
   · 腾讯控股 0700.HK(互联网,profitability_extension · 23-盈利)
   · 招商银行 600036.SH(金融,macro_extension · 20-经济)
   · 宁德时代 300750.SZ(新能源,无扩展,验证 §5 C7 8 分类)
-- v0.2 共识会议前,可让 3 行业直接在 IDE 里看字段类型 + 必填性 + 默认值 + 跨行业样例
+- v0.1.5 跨行业 5 公司对比矩阵(8 指标 × 5 公司 = 40 数据点 dryrun,§G 段输出)
+- v0.2 共识会议前,可让 3 行业直接在 IDE 里看字段类型 + 必填性 + 默认值 + 跨行业样例 + 跨行业对比矩阵
 - Phase 1 MVP 实施时,直接复制本模块到 `src/schemas/cross_industry.py`
 
 ## 字段对照(全部 32 字段)
@@ -32,7 +33,12 @@
 - §3 行业扩展位(9):pipeline_drugs, clinical_phase, fda_approval, gdp_contribution,
                    policy_sensitivity, employment_scale, unit_economics, ltv_cac_ratio, burn_rate
 
-## v0.1.4 vs v0.1.3 变更
+## v0.1.5 vs v0.1.4 变更
+- 新增 `build_cross_industry_matrix()` 函数:遍历 ALL_EXAMPLES → CrossIndustryCompanyProfile → 抽取 8 指标
+- 主自检 main() 加 §G 跨行业对比矩阵 dryrun(8 指标 × 5 公司 = 40 数据点)
+- §A-§F 6 段自检(贵州茅台单家 §A-§E + 5 公司批量 §F)保持不变,作为 §G 前置
+
+## v0.1.4 vs v0.1.3 变更(归档)
 - 加 4 家公司示例(恒瑞医药 / 腾讯控股 / 招商银行 / 宁德时代)→ ALL_EXAMPLES 字典(5 家)
 - 主自检 main() 加 §F 跨行业 5 公司批量 dryrun
 - §A-§E 5 段自检(贵州茅台单家)保持不变,作为 §F 前置
@@ -41,7 +47,7 @@
 ## 依赖
 - pydantic >= 2.0(本机验证 pydantic 2.13.4)
 - 运行:`python3 02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py --validate`
-  (文件名保留 v0.1.3 后缀,因 schema 主体未变,内容演进为 v0.1.4)
+  (文件名保留 v0.1.3 后缀,因 schema 主体未变,内容演进为 v0.1.5)
 """
 
 import sys
@@ -951,13 +957,60 @@ ALL_EXAMPLES: Dict[str, Dict[str, Any]] = {
 
 
 # ============================================================================
+# §G v0.1.5 跨行业 5 公司对比矩阵 - 数据抽取函数
+# ============================================================================
+
+
+def build_cross_industry_matrix() -> List[Dict[str, Any]]:
+    """v0.1.5 新增:遍历 ALL_EXAMPLES → 校验 → 抽取 8 指标 → 返回对比矩阵行。
+
+    返回:每行一个 dict,字段为 company / industry / market / rev_2024 / gm_2024 /
+    roe_2024 / dr_2024 / free_float / moat_score / moat_type / extension。
+    校验失败的公司跳过(并打印警告)。
+    """
+    rows: List[Dict[str, Any]] = []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for name, data in ALL_EXAMPLES.items():
+            try:
+                p = CrossIndustryCompanyProfile(**data)
+            except Exception as e:  # noqa: BLE001
+                print(f"  ⚠️ {name} 校验失败,跳过: {e}")
+                continue
+            exts = []
+            if p.bio_extension:
+                exts.append("bio")
+            if p.macro_extension:
+                exts.append("macro")
+            if p.profitability_extension:
+                exts.append("profitability")
+            ext_str = "+".join(exts) if exts else "no-ext"
+            rows.append(
+                {
+                    "company": name.split("_")[0],
+                    "industry": p.basic_info.industry_l1.value,
+                    "market": p.basic_info.market.value,
+                    "rev_2024": p.financial.revenue_5y[-1],
+                    "gm_2024": p.financial.gross_margin_5y[-1],
+                    "roe_2024": p.financial.roe_5y[-1],
+                    "dr_2024": p.financial.debt_ratio_5y[-1],
+                    "free_float": p.equity.free_float_ratio,
+                    "moat_score": p.moat.moat_score,
+                    "moat_type": p.moat.moat_type.value,
+                    "extension": ext_str,
+                }
+            )
+    return rows
+
+
+# ============================================================================
 # 自检入口(运行 `python3 02-跨行业schema-Pydantic雏形-v0.1.3.py --validate` 验证)
 # ============================================================================
 
 def main() -> int:
-    """v0.1.4 雏形自检 - 验证 5 公司跨行业示例可通过 schema 校验"""
+    """v0.1.5 雏形自检 - 验证 5 公司跨行业示例 + 跨行业对比矩阵可通过"""
     print("=" * 70)
-    print("跨行业公司画像 schema v0.1.4 - Pydantic 雏形自检(5 公司 dryrun)")
+    print("跨行业公司画像 schema v0.1.5 - Pydantic 雏形自检(5 公司 dryrun + 对比矩阵)")
     print("=" * 70)
     print(f"字段数:23 通用 + 9 行业扩展 = 32")
     print(f"示例公司:5 家(覆盖 5 industry_l1 × 3 扩展位)")
@@ -1066,8 +1119,86 @@ def main() -> int:
         print("  ❌ 批量 dryrun 存在失败,v0.1.4 雏形未通过")
         return 1
 
+    # §G v0.1.5 跨行业 5 公司对比矩阵
+    print("\n[§G] v0.1.5 跨行业 5 公司对比矩阵(8 指标 × 5 公司 = 40 数据点):")
+    rows = build_cross_industry_matrix()
+    if not rows:
+        print("  ❌ 对比矩阵为空,§G 失败")
+        return 1
+    # 8 指标横向对比表
+    header = (
+        f"  {'Company':<14s} {'ind':<6s} {'mkt':<4s} "
+        f"{'rev24':>7s} {'gm24':>6s} {'roe24':>6s} {'dr24':>6s} "
+        f"{'ff':>5s} {'moat':>5s} {'moat_t':<7s} {'ext':<14s}"
+    )
+    print(header)
+    print("  " + "-" * (len(header) - 2))
+    for r in rows:
+        print(
+            f"  {r['company']:<14s} {r['industry']:<6s} {r['market']:<4s} "
+            f"{r['rev_2024']:>7.0f} {r['gm_2024']:>6.1f} {r['roe_2024']:>6.1f} "
+            f"{r['dr_2024']:>6.1f} {r['free_float']:>5.1f} {r['moat_score']:>5d} "
+            f"{r['moat_type']:<7s} {r['extension']:<14s}"
+        )
+
+    # 营收 5 年 CAGR(以 rev_5y 序列估算)
+    print("\n  营收 5 年 CAGR(2020-2024):")
+    cagr_strs = []
+    for name, data in ALL_EXAMPLES.items():
+        rev5y = data.get("financial", {}).get("revenue_5y", [])
+        if len(rev5y) >= 2 and rev5y[0] > 0:
+            cagr = ((rev5y[-1] / rev5y[0]) ** (1 / (len(rev5y) - 1)) - 1) * 100
+            cagr_strs.append(f"{name.split('_')[0]:<8s} {cagr:>5.1f}%")
+    print("    " + " | ".join(cagr_strs))
+
+    # 护城河分梯队
+    strong = sum(1 for r in rows if r["moat_score"] >= 85)
+    medium = sum(1 for r in rows if 70 <= r["moat_score"] < 85)
+    weak = sum(1 for r in rows if r["moat_score"] < 70)
+    moat_scores = [r["moat_score"] for r in rows]
+    mean_score = sum(moat_scores) / len(moat_scores) if moat_scores else 0
+    median_score = sorted(moat_scores)[len(moat_scores) // 2] if moat_scores else 0
+    print("\n  护城河分梯队:")
+    print(
+        f"    强(85-100):{strong} 家  | 中(70-84):{medium} 家  | 弱(< 70):{weak} 家"
+    )
+    print(f"    均值 {mean_score:.1f} | 中位数 {median_score}")
+
+    # 行业扩展位填法对比
+    print("\n  行业扩展位填法对比:")
+    for r in rows:
+        if r["extension"] in ("bio", "macro", "profitability"):
+            ext_name = r["extension"]
+            ext_data_map = {
+                "bio": ("bio_extension", r["company"]),
+                "macro": ("macro_extension", r["company"]),
+                "profitability": ("profitability_extension", r["company"]),
+            }
+            ext_key, company = ext_data_map[ext_name]
+            sample = ALL_EXAMPLES[f"{company}_..."] if False else None
+            # 从 ALL_EXAMPLES 取第一个匹配 ticker
+            for k, v in ALL_EXAMPLES.items():
+                if k.startswith(company):
+                    sample = v
+                    break
+            if sample and ext_key in sample and sample[ext_key]:
+                ext_obj = sample[ext_key]
+                keys = list(ext_obj.keys()) if isinstance(ext_obj, dict) else []
+                print(
+                    f"    {ext_name:<24s} → {company:<6s}(字段: {', '.join(keys)})"
+                )
+
+    print(
+        f"\n  汇总:{len(rows)} 公司全部通过对比矩阵"
+        f"(矩阵 {len(rows) * 8} 数据点 = 8 指标 × {len(rows)} 公司)"
+    )
+
+    if len(rows) != 5:
+        print(f"  ❌ 对比矩阵行数不为 5(实际 {len(rows)}),§G 失败")
+        return 1
+
     print("\n" + "=" * 70)
-    print("v0.1.4 Pydantic 雏形自检完成(5 公司全部通过)")
+    print("v0.1.5 Pydantic 雏形自检完成(7 段全通过 · §A-§G)")
     print("=" * 70)
     return 0
 
