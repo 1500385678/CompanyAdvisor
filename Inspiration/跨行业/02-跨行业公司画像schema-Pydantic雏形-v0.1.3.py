@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-跨行业公司画像 schema · Pydantic 雏形 · v0.1.5
+跨行业公司画像 schema · Pydantic 雏形 · v0.1.6
 ================================================
 
 > 对应主计划:[项目开发计划.md §5 第 6 项](../../项目开发计划.md) - 跨行业顾问对齐
 > 状态:**草稿**(等张勇拉 17-生物 / 20-经济 / 23-盈利 3 顾问对齐后,可能升 v0.2)
 > 维护:22-公司-Company 行业顾问
-> 落地日期:2026-09-12(v0.1.3) / 2026-09-14(v0.1.4 跨行业 5 公司 dryrun) / 2026-09-15(v0.1.5 跨行业对比矩阵)
-> 对应章节:Inspiration/跨行业/01-跨行业公司画像字段schema设计稿.md §11/§12(v0.1.3)+ §14(v0.1.4)+ §15(v0.1.5)
-> 不做什么:不对齐(对齐仍由张勇驱动);不勾选 §5 #6 checkbox(对齐未发生)
+> 落地日期:2026-09-12(v0.1.3) / 2026-09-14(v0.1.4 跨行业 5 公司 dryrun) / 2026-09-15(v0.1.5 跨行业对比矩阵) / **2026-09-18(v0.1.6 Phase 1 MVP 字段映射)**
+> 对应章节:Inspiration/跨行业/01-跨行业公司画像字段schema设计稿.md §11/§12(v0.1.3)+ §14(v0.1.4)+ §15(v0.1.5)+ **§18(v0.1.6)**
+> 不做什么:不对齐(对齐仍由张勇驱动);不勾选 §5 #6 checkbox(对齐未发生);不勾选 §6 Phase 1 MVP checkbox(本节是"实施准备"非"实施")
 
 ## 用途
 - 把 §2 通用 23 字段 + §3 行业扩展 9 字段 = 32 字段定义翻译为 Pydantic V2 model
@@ -19,7 +19,8 @@
   · 招商银行 600036.SH(金融,macro_extension · 20-经济)
   · 宁德时代 300750.SZ(新能源,无扩展,验证 §5 C7 8 分类)
 - v0.1.5 跨行业 5 公司对比矩阵(8 指标 × 5 公司 = 40 数据点 dryrun,§G 段输出)
-- v0.2 共识会议前,可让 3 行业直接在 IDE 里看字段类型 + 必填性 + 默认值 + 跨行业样例 + 跨行业对比矩阵
+- **v0.1.6 新增:Phase 1 MVP 字段映射预演** —— 把 32 字段映射到 Phase 1 §6 的 5 个 MVP 入口,确定 MVP v1(17 字段)/ MVP v2(7 字段)/ 不进 MVP(9 扩展字段)三档;§H 段输出
+- v0.2 共识会议前,可让 3 行业直接在 IDE 里看字段类型 + 必填性 + 默认值 + 跨行业样例 + 跨行业对比矩阵 + Phase 1 MVP 字段分批
 - Phase 1 MVP 实施时,直接复制本模块到 `src/schemas/cross_industry.py`
 
 ## 字段对照(全部 32 字段)
@@ -33,7 +34,14 @@
 - §3 行业扩展位(9):pipeline_drugs, clinical_phase, fda_approval, gdp_contribution,
                    policy_sensitivity, employment_scale, unit_economics, ltv_cac_ratio, burn_rate
 
-## v0.1.5 vs v0.1.4 变更
+## v0.1.6 vs v0.1.5 变更(本节增量)
+- 新增 `build_mvp_tier_mapping()` 函数:返回 32 字段 → MVP v1/v2/不进 MVP 三档映射字典
+- 新增 MVP_TIER_FIELDS 常量:硬编码 17 + 6 + 9 = 32 字段(全字段无差额,与 §11 Pydantic schema 主体一致)
+- 主自检 main() 加 §H Phase 1 MVP 字段分批 dryrun(17 + 6 + 9 = 32 字段映射)
+- §A-§G 7 段自检(贵州茅台单家 §A-§E + 5 公司批量 §F + 对比矩阵 §G)保持不变,作为 §H 前置
+- §11 Pydantic schema 主体 / 32 字段定义 / validator / §5 C1-C8 约束均沿用 v0.1.5(不动)
+
+## v0.1.5 vs v0.1.4 变更(归档)
 - 新增 `build_cross_industry_matrix()` 函数:遍历 ALL_EXAMPLES → CrossIndustryCompanyProfile → 抽取 8 指标
 - 主自检 main() 加 §G 跨行业对比矩阵 dryrun(8 指标 × 5 公司 = 40 数据点)
 - §A-§F 6 段自检(贵州茅台单家 §A-§E + 5 公司批量 §F)保持不变,作为 §G 前置
@@ -47,7 +55,7 @@
 ## 依赖
 - pydantic >= 2.0(本机验证 pydantic 2.13.4)
 - 运行:`python3 02-跨行业公司画像schema-Pydantic雏形-v0.1.3.py --validate`
-  (文件名保留 v0.1.3 后缀,因 schema 主体未变,内容演进为 v0.1.5)
+  (文件名保留 v0.1.3 后缀,因 schema 主体未变,内容演进为 v0.1.6)
 """
 
 import sys
@@ -1004,13 +1012,117 @@ def build_cross_industry_matrix() -> List[Dict[str, Any]]:
 
 
 # ============================================================================
+# §H v0.1.6 Phase 1 MVP 字段分批 - 数据结构与映射函数
+# ============================================================================
+
+
+# v0.1.6 新增:硬编码 Phase 1 MVP 字段分批映射
+# 注:字段名是 Pydantic schema 的"顶层字段"或"嵌套字段",用点分路径
+# 如 §2.3 财务 5 年的 net_profit_5y → "financial.net_profit_5y"
+MVP_TIER_FIELDS: Dict[str, List[str]] = {
+    # MVP v1:17 字段 · 73.9% 通用字段 · 覆盖 4 个 MVP 入口核心
+    "v1": [
+        # §2.1 基本信息(6/6)
+        "basic_info.name",
+        "basic_info.ticker",
+        "basic_info.market",
+        "basic_info.incorporation_date",
+        "basic_info.hq_country",
+        "basic_info.industry_l1",
+        # §2.2 业务结构(1/3)
+        "business.business_segments",
+        # §2.3 财务 5 年(5/5)
+        "financial.revenue_5y",
+        "financial.net_profit_5y",
+        "financial.gross_margin_5y",
+        "financial.roe_5y",
+        "financial.debt_ratio_5y",
+        # §2.4 股权与控制(2/3)
+        "equity.top10_shareholders",
+        "equity.free_float_ratio",
+        # §2.6 事件 5 年(1/2)
+        "events.key_events_5y",
+        # §2.7 护城河(2/2)
+        "moat.moat_score",
+        "moat.moat_type",
+    ],
+    # MVP v2:6 字段 · 26.1% · 覆盖 3 个 MVP 入口补全
+    "v2": [
+        # §2.2 业务结构(2/3)
+        "business.revenue_breakdown",
+        "business.key_products",
+        # §2.4 股权与控制(1/3)
+        "equity.actual_controller",
+        # §2.5 管理层(2/2)
+        "management.key_management",
+        "management.board_independence",
+        # §2.6 事件 5 年(1/2)
+        "events.regulatory_actions_5y",
+    ],
+    # 不进 MVP(Phase 2+):9 字段 · 行业扩展位
+    "phase2_plus": [
+        # §3 行业扩展位(9/9)
+        "bio_extension.pipeline_drugs",
+        "bio_extension.clinical_phase",
+        "bio_extension.fda_approval",
+        "macro_extension.gdp_contribution",
+        "macro_extension.policy_sensitivity",
+        "macro_extension.employment_scale",
+        "profitability_extension.unit_economics",
+        "profitability_extension.ltv_cac_ratio",
+        "profitability_extension.burn_rate",
+    ],
+}
+
+
+def build_mvp_tier_mapping() -> Dict[str, Any]:
+    """v0.1.6 新增:返回 32 字段 → MVP v1/v2/不进 MVP 三档映射汇总。
+
+    返回:dict 含 tier 字段分批列表 + 字段数 + 占比 + 数据源就绪度。
+    注:不进 MVP 列表仅含 9 扩展字段(因通用 23 字段全部分到 v1/v2)。
+    """
+    v1_count = len(MVP_TIER_FIELDS["v1"])
+    v2_count = len(MVP_TIER_FIELDS["v2"])
+    p2_count = len(MVP_TIER_FIELDS["phase2_plus"])
+
+    return {
+        "v1": {
+            "fields": MVP_TIER_FIELDS["v1"],
+            "count": v1_count,
+            "pct_of_23": v1_count / 23 * 100,
+            "covers_entries": ["公司画像 MVP 核心", "对标矩阵 MVP 核心", "护城河评估 MVP 核心", "事件时间线 MVP 核心"],
+        },
+        "v2": {
+            "fields": MVP_TIER_FIELDS["v2"],
+            "count": v2_count,
+            "pct_of_23": v2_count / 23 * 100,
+            "covers_entries": ["公司画像 MVP 完整", "护城河评估 MVP 完整", "事件时间线 MVP 完整"],
+        },
+        "phase2_plus": {
+            "fields": MVP_TIER_FIELDS["phase2_plus"],
+            "count": p2_count,
+            "pct_of_32": p2_count / 32 * 100,
+            "covers_entries": ["Phase 2 行业映射(17-生物 / 20-经济 / 23-盈利)"],
+        },
+        "data_source_readiness": {
+            "全自动(Tushare)": 10,
+            "半自动(聚源+人工校核)": 4,
+            "LLM 推理(护城河 schema)": 2,
+            "跨境人工(MVP v2 才完整)": 1,
+        },
+        "schema_main_unchanged": True,  # §11 Pydantic schema 主体 / 32 字段不动
+        "note": "MVP v1 17 字段 = §2.1 全 6 + §2.2 1 + §2.3 全 5 + §2.4 2 + §2.6 1 + §2.7 全 2;MVP v2 6 字段 = §2.2 2 + §2.4 1 + §2.5 全 2 + §2.6 1;不进 MVP 9 字段 = §3 全 9 行业扩展位",
+    }
+
+
+# ============================================================================
 # 自检入口(运行 `python3 02-跨行业schema-Pydantic雏形-v0.1.3.py --validate` 验证)
 # ============================================================================
 
 def main() -> int:
-    """v0.1.5 雏形自检 - 验证 5 公司跨行业示例 + 跨行业对比矩阵可通过"""
+    """v0.1.6 雏形自检 - 验证 5 公司跨行业示例 + 跨行业对比矩阵 + Phase 1 MVP 字段分批可通过"""
     print("=" * 70)
-    print("跨行业公司画像 schema v0.1.5 - Pydantic 雏形自检(5 公司 dryrun + 对比矩阵)")
+    print("跨行业公司画像 schema v0.1.6 - Pydantic 雏形自检(5 公司 + 对比矩阵 + MVP 字段分批)")
     print("=" * 70)
     print(f"字段数:23 通用 + 9 行业扩展 = 32")
     print(f"示例公司:5 家(覆盖 5 industry_l1 × 3 扩展位)")
@@ -1197,8 +1309,99 @@ def main() -> int:
         print(f"  ❌ 对比矩阵行数不为 5(实际 {len(rows)}),§G 失败")
         return 1
 
+    # §H v0.1.6 Phase 1 MVP 字段分批
+    print("\n[§H] v0.1.6 Phase 1 MVP 字段分批(沿用 v0.1.3 Pydantic 32 字段):")
+
+    mapping = build_mvp_tier_mapping()
+
+    # MVP v1(17 字段)
+    v1 = mapping["v1"]
+    print(f"\n  MVP v1({v1['count']} 字段,{v1['pct_of_23']:.1f}% · 覆盖 4 个 MVP 入口核心):")
+    # 按 § 编号分组展示
+    v1_by_section: Dict[str, List[str]] = {}
+    for f in v1["fields"]:
+        section = f.split(".")[0]
+        section_label_map = {
+            "basic_info": "§2.1 基本信息",
+            "business": "§2.2 业务结构",
+            "financial": "§2.3 财务 5 年",
+            "equity": "§2.4 股权与控制",
+            "management": "§2.5 管理层",
+            "events": "§2.6 事件 5 年",
+            "moat": "§2.7 护城河",
+            "bio_extension": "§3 bio 扩展",
+            "macro_extension": "§3 macro 扩展",
+            "profitability_extension": "§3 profitability 扩展",
+        }
+        label = section_label_map.get(section, section)
+        v1_by_section.setdefault(label, []).append(f.split(".")[-1])
+    for label, fields in v1_by_section.items():
+        print(f"    {label}({len(fields)}): {', '.join(fields)}")
+
+    # MVP v2(7 字段)
+    v2 = mapping["v2"]
+    print(f"\n  MVP v2({v2['count']} 字段,{v2['pct_of_23']:.1f}% · 覆盖 3 个 MVP 入口补全):")
+    v2_by_section: Dict[str, List[str]] = {}
+    for f in v2["fields"]:
+        section = f.split(".")[0]
+        section_label_map = {
+            "basic_info": "§2.1 基本信息",
+            "business": "§2.2 业务结构",
+            "financial": "§2.3 财务 5 年",
+            "equity": "§2.4 股权与控制",
+            "management": "§2.5 管理层",
+            "events": "§2.6 事件 5 年",
+            "moat": "§2.7 护城河",
+        }
+        label = section_label_map.get(section, section)
+        v2_by_section.setdefault(label, []).append(f.split(".")[-1])
+    for label, fields in v2_by_section.items():
+        print(f"    {label}({len(fields)}): {', '.join(fields)}")
+
+    # 不进 MVP(9 扩展字段)
+    p2 = mapping["phase2_plus"]
+    print(f"\n  不进 MVP({p2['count']} 字段,{p2['pct_of_32']:.1f}% · Phase 2+):")
+    p2_by_ext: Dict[str, List[str]] = {}
+    for f in p2["fields"]:
+        ext = f.split(".")[0]
+        p2_by_ext.setdefault(ext, []).append(f.split(".")[-1])
+    for ext, fields in p2_by_ext.items():
+        print(f"    {ext}({len(fields)}): {', '.join(fields)}")
+
+    # 字段总数校验
+    total = v1["count"] + v2["count"] + p2["count"]
+    print(
+        f"\n  汇总:{v1['count']} (MVP v1) + {v2['count']} (MVP v2) = "
+        f"{v1['count'] + v2['count']} 通用字段 / 23 = "
+        f"{(v1['count'] + v2['count']) / 23 * 100:.1f}%"
+    )
+    print(
+        f"       留 Phase 2+:{p2['count']} 行业扩展字段 "
+        f"(走 17-生物 / 20-经济 / 23-盈利 3 行业映射)"
+    )
+
+    # 数据源就绪度
+    print("\n  数据源就绪度(MVP v1 17 字段):")
+    for source, count in mapping["data_source_readiness"].items():
+        print(f"    {source}:{count} 字段")
+
+    # §H 校验
+    expected_v1 = 17
+    expected_v2 = 6
+    expected_p2 = 9
+    if v1["count"] != expected_v1:
+        print(f"  ❌ MVP v1 字段数不为 {expected_v1}(实际 {v1['count']}),§H 失败")
+        return 1
+    if v2["count"] != expected_v2:
+        print(f"  ❌ MVP v2 字段数不为 {expected_v2}(实际 {v2['count']}),§H 失败")
+        return 1
+    if p2["count"] != expected_p2:
+        print(f"  ❌ Phase 2+ 字段数不为 {expected_p2}(实际 {p2['count']}),§H 失败")
+        return 1
+    print(f"\n  ✅ §H 验收通过(MVP v1:17 / MVP v2:6 / Phase 2+:9 / 总 32 字段,无差额)")
+
     print("\n" + "=" * 70)
-    print("v0.1.5 Pydantic 雏形自检完成(7 段全通过 · §A-§G)")
+    print("v0.1.6 Pydantic 雏形自检完成(8 段全通过 · §A-§H)")
     print("=" * 70)
     return 0
 
